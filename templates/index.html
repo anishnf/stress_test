@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S3 Upload Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">S3 Upload Dashboard</div>
+            <ul>
+                <li><a href="#" class="active">Home</a></li>
+                <li><a href="#">About</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="content-wrapper">
+            <div class="left-column">
+                <section class="hero">
+                    <h1>S3 Upload Progress</h1>
+                    <p>Monitor and control your S3 uploads with ease</p>
+                </section>
+
+                <section class="upload-controls">
+                    <div class="input-group">
+                        <label for="numEmails">Number of Emails:</label>
+                        <input type="number" id="numEmails" value="10" min="1">
+                    </div>
+                    <div class="input-group">
+                        <label for="uploadRate">Upload Rate (emails/sec):</label>
+                        <input type="number" id="uploadRate" value="1" min="0.1" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label for="estimatedDuration">Estimated Duration:</label>
+                        <span id="estimatedDuration">10 seconds</span>
+                    </div>
+                    <button id="generateAndUpload" class="btn-primary">Generate and Upload</button>
+                </section>
+
+                <section class="progress-section">
+                    <div class="progress-bar">
+                        <div id="progressFill"></div>
+                    </div>
+                    <p id="progressText">0%</p>
+                    <p id="elapsedTime">Elapsed Time: 0 seconds</p>
+                </section>
+            </div>
+
+            <div class="right-column">
+                <section class="log-section">
+                    <h2>Upload Logs</h2>
+                    <div id="logContainer"></div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 S3 Upload Dashboard. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const generateAndUploadButton = document.getElementById('generateAndUpload');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const elapsedTimeText = document.getElementById('elapsedTime');
+        const numEmailsInput = document.getElementById('numEmails');
+        const uploadRateInput = document.getElementById('uploadRate');
+        const estimatedDurationSpan = document.getElementById('estimatedDuration');
+        const logContainer = document.getElementById('logContainer');
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function updateEstimatedDuration() {
+            const numEmails = parseInt(numEmailsInput.value);
+            const uploadRate = parseFloat(uploadRateInput.value);
+            const duration = numEmails / uploadRate;
+            estimatedDurationSpan.textContent = `${duration.toFixed(1)} seconds`;
+        }
+
+        function addLog(message) {
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function updateProgress() {
+            fetch('/progress')
+                .then(response => response.json())
+                .then(data => {
+                    const progress = data.progress.toFixed(2);
+                    progressFill.style.width = `${progress}%`;
+                    progressText.textContent = `${progress}%`;
+                    elapsedTimeText.textContent = `Elapsed Time: ${data.elapsed_time.toFixed(1)} seconds`;
+
+                    if (data.complete) {
+                        addLog(`Upload completed. Total emails uploaded: ${data.total_emails}`);
+                        // addLog('Uploaded files:');
+                        // data.uploaded_files.forEach(file => addLog(`- ${file}`));
+                        generateAndUploadButton.disabled = false;
+                    } else {
+                        addLog(`Progress: ${progress}% - Uploaded ${Math.floor(data.total_emails * data.progress / 100)}/${data.total_emails} emails`);
+                        setTimeout(debouncedUpdateProgress, 1000);
+                    }
+                });
+        }
+
+        const debouncedUpdateProgress = debounce(updateProgress, 100);
+
+        function generateAndUploadHandler() {
+            const numEmails = parseInt(numEmailsInput.value);
+            const uploadRate = parseFloat(uploadRateInput.value);
+
+            generateAndUploadButton.disabled = true;
+            addLog(`Generating ${numEmails} emails and preparing for upload at ${uploadRate} emails/sec`);
+
+            const formData = new FormData();
+            formData.append('num_emails', numEmails);
+            formData.append('rate', uploadRate);
+
+            fetch('/generate_and_upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'started') {
+                    addLog('File generation completed. Upload process started');
+                    addLog('Generated files:');
+                    data.generated_files.forEach(file => addLog(`- ${file}`));
+                    debouncedUpdateProgress();
+                } else {
+                    addLog(`Error: ${data.message}`);
+                    generateAndUploadButton.disabled = false;
+                }
+            });
+        }
+
+        numEmailsInput.addEventListener('input', updateEstimatedDuration);
+        uploadRateInput.addEventListener('input', updateEstimatedDuration);
+
+        // Remove any existing event listeners
+        generateAndUploadButton.removeEventListener('click', generateAndUploadHandler);
+        // Add the event listener
+        generateAndUploadButton.addEventListener('click', generateAndUploadHandler);
+
+        updateEstimatedDuration();
+    </script>
+</body>
+</html>

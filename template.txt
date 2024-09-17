@@ -1,0 +1,32 @@
+MIME-Version: 1.0
+Date: {formatted_date}
+Message-ID: {message_id}
+Subject: {subject_line}
+From: {from_address}
+To: {to_address}
+X-Gm-Original-To: {to_address}
+X-nightfall-id: 6faa40d5-1efe-44b6-8409-d9befec286ae
+Content-Type: multipart/alternative; boundary="000000000000c9ec5206213a3b71"
+
+--000000000000c9ec5206213a3b71
+Content-Type: text/plain; charset="UTF-8"
+
+-- 
+[[+]]
+name: Max
+title: IT
+phone: 123-456-7890
+mobile: 123-456-7890
+[[+]]
+
+--000000000000c9ec5206213a3b71
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><br clear=3D"all"><div><br></div><span class=3D"gmail_sign=
+ature_prefix">-- </span><br><div dir=3D"ltr" class=3D"gmail_signature" data=
+-smartmail=3D"gmail_signature"><div dir=3D"ltr"><div>[[+]]</div><div>name: =
+Max</div><div>title: IT</div><div>phone: 123-456-7890</div><div>mobile: 123=
+-456-7890</div><div>[[+]]</div></div></div></div>
+
+--000000000000c9ec5206213a3b71--
